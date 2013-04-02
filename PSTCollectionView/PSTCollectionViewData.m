@@ -2,7 +2,7 @@
 //  PSTCollectionViewData.m
 //  PSPDFKit
 //
-//  Copyright (c) 2012 Peter Steinberger. All rights reserved.
+//  Copyright (c) 2012-2013 Peter Steinberger. All rights reserved.
 //
 
 #import "PSTCollectionViewData.h"
@@ -35,7 +35,6 @@
  */
 
     // @steipete
-    NSArray *_cellLayoutAttributes;
 
     CGSize _contentSize;
     struct {
@@ -46,6 +45,8 @@
 }
 @property (nonatomic, unsafe_unretained) PSTCollectionView *collectionView;
 @property (nonatomic, unsafe_unretained) PSTCollectionViewLayout *layout;
+@property (nonatomic, strong) NSArray *cachedLayoutAttributes;
+
 @end
 
 @implementation PSTCollectionViewData
@@ -87,14 +88,16 @@
     [self validateItemCounts];
     [self prepareToLoadData];
     
-    // rect.size should be within _contentSize
-    rect.size.width = fminf(rect.size.width, _contentSize.width);
-    rect.size.height = fminf(rect.size.height, _contentSize.height);
-    
     // TODO: check if we need to fetch data from layout
     if (!CGRectEqualToRect(_validLayoutRect, rect)) {
         _validLayoutRect = rect;
-        _cellLayoutAttributes = [self.layout layoutAttributesForElementsInRect:rect];
+        // we only want cell layoutAttributes & supplementaryView layoutAttributes
+        self.cachedLayoutAttributes = [[self.layout layoutAttributesForElementsInRect:rect] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(PSTCollectionViewLayoutAttributes *evaluatedObject, NSDictionary *bindings) {
+            return ([evaluatedObject isKindOfClass:[PSTCollectionViewLayoutAttributes class]] &&
+                    ([evaluatedObject isCell]||
+                     [evaluatedObject isSupplementaryView]||
+                     [evaluatedObject isDecorationView]));
+        }]];
     }
 }
 
@@ -150,7 +153,7 @@
 
 - (NSArray *)layoutAttributesForElementsInRect:(CGRect)rect {
     [self validateLayoutInRect:rect];
-    return _cellLayoutAttributes;
+    return self.cachedLayoutAttributes;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////

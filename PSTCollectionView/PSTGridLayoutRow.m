@@ -2,7 +2,7 @@
 //  PSTGridLayoutRow.m
 //  PSPDFKit
 //
-//  Copyright (c) 2012 Peter Steinberger. All rights reserved.
+//  Copyright (c) 2012-2013 Peter Steinberger. All rights reserved.
 //
 
 #import "PSTCollectionView.h"
@@ -113,13 +113,15 @@
         CGPoint itemOffset = CGPointZero;
         if (horizontalAlignment == PSTFlowLayoutHorizontalAlignmentRight) {
             itemOffset.x += leftOverSpace;
-        }else if(horizontalAlignment == PSTFlowLayoutHorizontalAlignmentCentered) {
+        }else if(horizontalAlignment == PSTFlowLayoutHorizontalAlignmentCentered ||
+                 (horizontalAlignment == PSTFlowLayoutHorizontalAlignmentJustify && usedItemCount == 1)) {
+            // Special case one item row to split leftover space in half
             itemOffset.x += leftOverSpace/2;
         }
         
         // calculate the justified spacing among all items in a row if we are using
         // the default PSTFlowLayoutHorizontalAlignmentJustify layout
-        CGFloat interSpacing = leftOverSpace/(CGFloat)(usedItemCount-1);
+        CGFloat interSpacing = usedItemCount <= 1 ? 0 : leftOverSpace/(CGFloat)(usedItemCount-1);
 
         // calculate row frame as union of all items
         CGRect frame = CGRectZero;
@@ -147,8 +149,8 @@
                     itemOffset.x += interSpacing;
                 }
             }
-            item.itemFrame = CGRectIntegral(itemFrame); // might call nil; don't care
-            [rects addObject:[NSValue valueWithCGRect:CGRectIntegral(itemFrame)]];
+            item.itemFrame = itemFrame; // might call nil; don't care
+            [rects addObject:[NSValue valueWithCGRect:itemFrame]];
             frame = CGRectUnion(frame, itemFrame);
         }
         _rowSize = frame.size;
